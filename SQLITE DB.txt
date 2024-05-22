@@ -1,0 +1,182 @@
+Xml File
+
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:textSize="20sp"
+        android:layout_marginTop="10dp"
+        android:text="Enter Name to store in SQLite" />
+
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="40dp"
+        android:id="@+id/ed1"
+        android:background="#fff"
+        android:layout_marginTop="20dp"
+        android:layout_marginLeft="20dp"
+        android:hint="Enter Name"/>
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/button1"
+        android:layout_marginLeft="20dp"
+        android:layout_marginTop="10dp"
+        android:text="Store"/>
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/button2"
+        android:layout_marginLeft="20dp"
+        android:layout_marginTop="10dp"
+        android:text="Get All Names from SQLite"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/t1"
+        android:layout_marginLeft="10dp"
+
+        android:textSize="20sp"
+        android:layout_marginTop="10dp"
+        android:text="datas stored in SQlite" />
+
+</LinearLayout>
+
+
+Activity_main.Java
+
+import androidx.appcompat.app.AppCompatActivity;
+
+import android.os.Bundle;
+import android.os.Bundle;
+import android.view.View;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
+import android.widget.Toast;
+import java.util.ArrayList;
+
+public class MainActivity extends AppCompatActivity {
+
+    private Button btnStore, btnGetall;
+    private EditText etname;
+    DatabaseHelper databaseHelper;
+    private TextView names;
+    private ArrayList<String> arrayList;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+
+        databaseHelper = new DatabaseHelper(this);
+        names = (TextView) findViewById(R.id.t1);
+
+        btnStore = (Button) findViewById(R.id.button1);
+        btnGetall =(Button) findViewById(R.id.button2);
+        etname = (EditText) findViewById(R.id.ed1);
+
+        btnStore.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                databaseHelper.addStudentDetail(etname.getText().toString());
+                etname.setText("");
+                Toast.makeText(MainActivity.this, "Stored Successfully!", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        btnGetall.setOnClickListener(new View.OnClickListener()
+        {
+            @Override
+            public void onClick(View v) {
+                arrayList = databaseHelper.getAllStudentsList();
+                names.setText("");
+                for (int i = 0; i < arrayList.size(); i++)
+                {
+                    names.setText(names.getText().toString()+", "+arrayList.get(i));
+                }
+            }
+        });
+    }
+}
+
+
+DatabaseHelper.java
+
+
+import android.annotation.SuppressLint;
+import android.content.ContentValues;
+import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
+import java.util.ArrayList;
+
+public class DatabaseHelper extends SQLiteOpenHelper {
+
+    public static String DATABASE_NAME = "student_database";
+    private static final int DATABASE_VERSION = 1;
+    private static final String TABLE_STUDENTS = "students";
+    private static final String KEY_ID = "id";
+    private static final String KEY_FIRSTNAME = "name";
+
+    /*CREATE TABLE students ( id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, phone_number TEXT......);*/
+
+    private static final String CREATE_TABLE_STUDENTS = "CREATE TABLE "
+            + TABLE_STUDENTS + "(" + KEY_ID
+            + " INTEGER PRIMARY KEY AUTOINCREMENT," + KEY_FIRSTNAME + " TEXT );";
+
+    public DatabaseHelper(Context context) {
+        super(context, DATABASE_NAME, null, DATABASE_VERSION);
+
+        Log.d("table", CREATE_TABLE_STUDENTS);
+    }
+
+    @Override
+    public void onCreate(SQLiteDatabase db) {
+        db.execSQL(CREATE_TABLE_STUDENTS);
+    }
+
+    @Override
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        db.execSQL("DROP TABLE IF EXISTS '" + TABLE_STUDENTS + "'");
+        onCreate(db);
+    }
+
+    public long addStudentDetail(String student) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        ContentValues values = new ContentValues();
+        values.put(KEY_FIRSTNAME, student);
+        long insert = db.insert(TABLE_STUDENTS, null, values);
+
+        return insert;
+    }
+
+    @SuppressLint("Range")
+    public ArrayList<String> getAllStudentsList()
+    {
+        ArrayList<String> studentsArrayList = new   ArrayList<String>();
+        String name="";
+        String selectQuery = "SELECT  * FROM " + TABLE_STUDENTS;
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor c = db.rawQuery(selectQuery, null);
+        if (c.moveToFirst()) {
+            do {
+                name = c.getString(c.getColumnIndex(KEY_FIRSTNAME));
+                studentsArrayList.add(name);
+            } while (c.moveToNext());
+            Log.d("array", studentsArrayList.toString());
+        }
+        return studentsArrayList;
+    }
+}
